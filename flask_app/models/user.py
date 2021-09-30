@@ -24,17 +24,11 @@ class User:
         if not EMAIL_REGEX.match(user['email']): 
             flash("Invalid email address!", "register")
             is_valid = False
-        if len(user['fname']) < 1:
-            flash("First Name must be at least 1 character long.", "register")
+        if len(user['fname']) < 2:
+            flash("First Name must be at least 2 characters long.", "register")
             is_valid = False
-        if len(user['lname']) < 1:
-            flash("Last Name must be at least 1 character long.", "register")
-            is_valid = False
-        if len(user['pw']) < 3:
-            flash("Password must be at least 3 characters long.", "register")
-            is_valid = False
-        if not PW_UPPER.match(user['pw']) or not PW_NUMBER.match(user['pw']):
-            flash("Your password must contain at least 1 number and 1 upper case letter", "register")
+        if len(user['lname']) < 2:
+            flash("Last Name must be at least 2 characters long.", "register")
             is_valid = False
         if user['pw'] != user['cpw']:
             flash("Your password does not match the password confirmed", "register")

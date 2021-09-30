@@ -13,7 +13,9 @@ def form():
 
 @app.route('/register', methods=["POST"])
 def create_user():
-
+    if not request.form:
+        flash("Please register", "register")
+        return redirect("/")
     if not User.validate_user(request.form):
         # we redirect to the template with the form.
             return redirect('/')
@@ -38,6 +40,10 @@ def create_user():
 def login_user():
     # First we make a data dictionary from our request.form coming from our template.
     # The keys in data need to line up exactly with the variables in our query string.
+    if not request.form:
+        flash("Please login", "login")
+        return redirect("/")
+
     if not User.validate_login(request.form):
         # we redirect to the template with the form.
             return redirect('/')
@@ -61,7 +67,10 @@ def login_user():
 
 @app.route("/homepage")
 def read():
-    # call the get all classmethod to get all users
+
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
     recipes= Recipe.get_all_recipes()
     user= User.get_user_info(data={'id':session['user_id']})
     return render_template("read.html", recipes=recipes, user=user)
@@ -69,16 +78,20 @@ def read():
 
 @app.route("/recipes/new")
 def addRecipe():
-    # call the get all classmethod to get all users
-    
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
+
     return render_template("form_recipe.html")
 
 
 @app.route("/addRecipe", methods=["POST"])
 def sendRecipe():
-    # call the get all classmethod to get all users
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
+
     if not Recipe.validate_recipe(request.form):
-        # we redirect to the template with the form.
             return redirect('/recipes/new')
 
     data = {
@@ -98,6 +111,10 @@ def sendRecipe():
 
 @app.route("/recipes/<int:id>")
 def showRecipe(id):
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
+    
     user= User.get_user_info(data={'id':session['user_id']})
     recipe = Recipe.get_recipe_info(data={'id':id})
     return render_template("show_recipe.html", recipe=recipe, user=user)
@@ -106,15 +123,23 @@ def showRecipe(id):
 
 @app.route("/recipes/edit/<int:id>")
 def editRecipe(id):
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
+
+    user= User.get_user_info(data={'id':session['user_id']})
     recipe = Recipe.get_recipe_info(data={'id':id})
     print(recipe)
-    return render_template("edit_recipe.html", id = id, recipe=recipe)
+    return render_template("edit_recipe.html", id = id, recipe=recipe, user=user)
 
 @app.route("/updateRecipe/<int:id>", methods=["POST"])
 def updateRecipe(id):
-    # call the get all classmethod to get all users
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
+
     if not Recipe.validate_recipe(request.form):
-        # we redirect to the template with the form.
+
             return redirect('/recipes/edit/{}'.format(id))
 
     data = {
@@ -135,6 +160,9 @@ def updateRecipe(id):
 
 @app.route("/recipes/delete/<int:id>")
 def deleteRecipe(id):
+    if not 'user_id' in session:
+        flash("Please login to access the site","login")
+        return redirect("/")
     Recipe.delete_recipe(data={'id':id})
     return redirect("/homepage")
 
