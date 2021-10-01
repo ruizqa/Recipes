@@ -2,7 +2,8 @@ from flask_app import app
 from flask import render_template,redirect,request,session,flash
 from flask_app.models.user import User
 from flask_app.models.recipe import Recipe
-from flask_bcrypt import Bcrypt        
+from flask_bcrypt import Bcrypt
+from flask import jsonify       
 bcrypt = Bcrypt(app)
 #import datetime to change date format
 
@@ -13,12 +14,6 @@ def form():
 
 @app.route('/register', methods=["POST"])
 def create_user():
-    if not request.form:
-        flash("Please register", "register")
-        return redirect("/")
-    if not User.validate_user(request.form):
-        # we redirect to the template with the form.
-            return redirect('/')
     
     pw_hash = bcrypt.generate_password_hash(request.form['pw'])
     
@@ -31,38 +26,40 @@ def create_user():
     
     # We pass the data dictionary into the save method from the User class.
     id= User.save(data)
-
+    message={}
     # Don't forget to redirect after saving to the database.
-    session['user_id'] = id
-    return redirect('/homepage')            
+    if id:
+        message['ok']= True
+        session['user_id'] = id
+    else:
+        message['ok']= False
+        message['content'] = str(id)
+    return jsonify(message)
 
 @app.route('/login', methods=["POST"])
 def login_user():
     # First we make a data dictionary from our request.form coming from our template.
     # The keys in data need to line up exactly with the variables in our query string.
-    if not request.form:
-        flash("Please login", "login")
-        return redirect("/")
-
-    if not User.validate_login(request.form):
-        # we redirect to the template with the form.
-            return redirect('/')
 
     data = {
         "email" : request.form["email"],
         "password" : request.form["pw"]
     }
 
+    message= {}
+
     user= User.login(data)
-    print(user)
     if not user:
-        return redirect('/')
+        message['ok'] = False
+        message['content'] = "An error ocurred while logging in"
+        return jsonify(message)
     elif not bcrypt.check_password_hash(user['password'], data['password']):
-        flash("The password is incorrect", "login")
-        return redirect('/')
+        message['ok'] = False
+        message['content'] = "Wrong password. Please enter the correct password"
+        return jsonify(message)
     session['user_id'] = user['id']
-    # Don't forget to redirect after saving to the database.
-    return redirect('/homepage')  
+    message['ok']= True
+    return jsonify(message) 
 
 
 @app.route("/homepage")
@@ -75,14 +72,14 @@ def read():
     user= User.get_user_info(data={'id':session['user_id']})
     return render_template("read.html", recipes=recipes, user=user)
 
+# @app.route("/getRecipe")
+# def read():
 
-@app.route("/recipes/new")
-def addRecipe():
-    if not 'user_id' in session:
-        flash("Please login to access the site","login")
-        return redirect("/")
-
-    return render_template("form_recipe.html")
+#     recipes= Recipe.get_recipe_info()
+#     message={
+#         'recipe':recipes,
+#     }
+#     return jsonify(message)
 
 
 @app.route("/addRecipe", methods=["POST"])
@@ -90,9 +87,6 @@ def sendRecipe():
     if not 'user_id' in session:
         flash("Please login to access the site","login")
         return redirect("/")
-
-    if not Recipe.validate_recipe(request.form):
-            return redirect('/recipes/new')
 
     data = {
         "name" : request.form["name"],
@@ -103,11 +97,17 @@ def sendRecipe():
         "user_id": session["user_id"]
     }
 
-    Recipe.save(data)
-
-
-    # Don't forget to redirect after saving to the database.
-    return redirect('/homepage')
+    message = {}
+    log = Recipe.save(data)
+    if log:
+        message['ok']= True
+        data['id'] = log
+        message['data'] = data
+        return jsonify(message)
+    else:
+        message['ok']=False
+        message['content']= str(log)
+        return jsonify(message)
 
 @app.route("/recipes/<int:id>")
 def showRecipe(id):
